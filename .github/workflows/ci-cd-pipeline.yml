@@ -1,0 +1,56 @@
+name: CI Pipeline
+
+# Trigger the pipeline on push to main and feature branches, and on pull requests targeting main
+on:
+  push:
+    branches:
+      - main
+      - 'feature/*'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # Using the latest Ubuntu image for the build environment
+
+    steps:
+      # Step 1: Checkout the code from the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Node.js environment
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      # Step 3: Install dependencies using npm
+      - name: Install Dependencies
+        run: npm install
+
+      # Step 4: Run tests with Jest (you can replace this with any other testing framework you use)
+      - name: Run Tests
+        run: npm test
+
+      # Step 5: Publish test results (this will upload the results as artifacts in GitHub for review)
+      - name: Publish Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: ./test-results
+      # Build Docker Image
+      - name: Build Docker Image
+        run: docker build -t my-sample-app .
+
+      # Log in to Docker Hub (use GitHub Secrets to store Docker credentials securely)
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # Push Docker Image to Docker Hub
+      - name: Push Docker Image to Docker Hub
+        run: docker push my-sample-app
